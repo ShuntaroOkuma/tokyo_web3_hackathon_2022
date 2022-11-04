@@ -1,9 +1,5 @@
 # tokyo_web3_hackathon_2022
 
-# 質問
-
-- NFT 単体を destroy するには必ず withdraw するしか方法がないですかね？
-
 # 最速セットアップ
 
 ```sh
@@ -12,7 +8,7 @@ flow init
 flow emulator --persist --contracts --simple-addresses -v
 ```
 
-別ターミナル
+別ターミナルで下記を実行
 
 ```sh
 bash setup_env.sh
@@ -24,7 +20,7 @@ flow transactions send --signer emulator-account src/transactions/get_nft_info.c
 
 # 記載必須項目
 
-- [] 最後にちゃんと書く
+TODO: 最後にちゃんと書く
 
 - 使用した tech stacks
 
@@ -167,9 +163,13 @@ INFO[0000] ✨   NFT Storefront contract                   NFTStorefront=0x00000
 
 `-v` でログを詳細に出力してくれる（log()の結果も出力してくれるようになる）。
 
-※環境をリセットしたいときは、`flowdb`フォルダを削除する。
+※ 環境をリセットしたいときは、`flowdb`フォルダを削除する。
 
-## flow.json の更新
+## アカウントと flow.json のセットアップ
+
+以下を実行するシェルは `setup_env.sh`。
+
+### flow.json の更新
 
 シンプルなアドレス形態を使う形で起動したため、`flow init`で自動生成された`flow.json`を書き換える。
 
@@ -195,11 +195,9 @@ INFO[0000] ✨   NFT Storefront contract                   NFTStorefront=0x00000
   }
 ```
 
-## アカウントを作る
+### アカウントを作る
 
 アカウントを３つ作る。
-
-以下 1~3 を実行するシェルは `setup_env.sh`。
 
 1. 鍵を作る
 
@@ -429,8 +427,8 @@ Keys     1
 
 # ユースケース
 
-- なりすましを防げるか
-  - DApps でどう使うか
+なりすましを防げるか、がわかるケースを明確にしておきたい
+DApps でどう使うか、にも繋がる
 
 1. anpan から jam に NFT を移動
    これは ready と transfer で普通にできる
