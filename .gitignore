@@ -1,0 +1,4 @@
+flowdb/
+
+# build, sign, send-signedの段階を踏むtransaction実行時に生成されるファイル
+*_tx
