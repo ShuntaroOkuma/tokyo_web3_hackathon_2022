@@ -319,10 +319,11 @@ DApps でどう使うか、にも繋がる
 
   逆に１つでも ready になっていない NFT がある、もしくは readyTimeHourPeriod が経過していない NFT があれば、破壊できない
 
-  以下は anpan のコレクションを破壊する例
+  以下は baikin のコレクションを破壊する例
 
   ```
-  flow transactions send --signer anpan src/transactions/destroy_collection.cdc
+  flow transactions send --signer baikin src/transactions/destroy_collection.cdc
+  flow transactions send --signer baikin src/transactions/get_info.cdc
   ```
 
 ## トークン
@@ -377,7 +378,7 @@ DApps でどう使うか、にも繋がる
   上記の minter の anpan への移動を実施した上で以下を実施することで、emulator-account 以外でも mint できることを確認できる
 
   ```
-  flow transactions send --signer anpan src/transactions/mint_nft.cdc 0x05`
+  flow transactions send --signer anpan src/transactions/mint_nft.cdc 0x05
   ```
 
 - user は mint できない
@@ -419,8 +420,8 @@ DApps でどう使うか、にも繋がる
   anpan が ID:1 の StrictNFT を所有している前提
 
   ```sh
-  flow transactions send --signer anpan src/transactions/ready_nft.cdc 1
-  flow transactions send --signer anpan src/transactions/get_nft_info.cdc 1
+  flow transactions send --signer anpan src/transactions/ready_nft.cdc 2
+  flow transactions send --signer anpan src/transactions/get_nft_info.cdc 2
   ```
 
 - user が指定した時間がたった NFT を withdraw できる
@@ -430,35 +431,35 @@ DApps でどう使うか、にも繋がる
   以下は anpan から jam に transfer する例
 
   ```sh
-  flow transactions send --signer anpan src/transactions/transfer_nft.cdc 0x06 1
-  flow transactions send --signer jam src/transactions/get_nft_info.cdc 1
+  flow transactions send --signer anpan src/transactions/transfer_nft.cdc 0x06 2
+  flow transactions send --signer jam src/transactions/get_nft_info.cdc 2
   ```
 
 - user が withdraw した後の NFT が ready が false かつ readyTime が nil になっている
 
   ```
-  flow transactions send --signer jam src/transactions/get_nft_info.cdc 1
+  flow transactions send --signer jam src/transactions/get_nft_info.cdc 2
   ```
 
 - user が ready=false の NFT を withdraw できない
 
   ```
-  flow transactions send --signer jam src/transactions/transfer_nft.cdc 0x01 1
+  flow transactions send --signer jam src/transactions/transfer_nft.cdc 0x01 2
   ```
 
 - user が指定した時間がたっていない ready 状態の NFT を withdraw できない
 
   ```
-  flow transactions send --signer jam src/transactions/ready_withdraw_nft.cdc 1
+  flow transactions send --signer jam src/transactions/ready_withdraw_nft.cdc 2
   ```
 
 - user が指定した時間が経過した NFT を destroy できるか
 
   ```sh
-  flow transactions send --signer jam src/transactions/ready_nft.cdc 1
+  flow transactions send --signer jam src/transactions/ready_nft.cdc 2
   (60秒 待つ)
-  flow transactions send --signer jam src/transactions/destroy_nft.cdc 1
-  flow transactions send --signer jam src/transactions/get_nft_info.cdc 1
+  flow transactions send --signer jam src/transactions/destroy_nft.cdc 2
+  flow transactions send --signer jam src/transactions/get_nft_info.cdc 2
   ```
 
 - user が指定した時間がたっていない NFT を destroy できない
@@ -469,11 +470,13 @@ DApps でどう使うか、にも繋がる
 
 - user が ready 状態の NFT を unready できる
 
-  上記で ID:0 の NFT を ready にした前提
-
   ```
   flow transactions send --signer emulator-account src/transactions/get_nft_info.cdc 0
+  flow transactions send --signer emulator-account src/transactions/ready_nft.cdc 0
+
+  flow transactions send --signer emulator-account src/transactions/get_nft_info.cdc 0
   flow transactions send --signer emulator-account src/transactions/unready_nft.cdc 0
+
   flow transactions send --signer emulator-account src/transactions/get_nft_info.cdc 0
   ```
 
@@ -488,30 +491,32 @@ DApps でどう使うか、にも繋がる
 - アドレスが 5 つ以下になっているか、FIFO になっている
 
   ```sh
-  flow transactions send --signer emulator-account src/transactions/ready_nft.cdc 0
-  flow transactions send --signer emulator-account src/transactions/transfer_nft.cdc 0x05 0
-  flow transactions send --signer anpan src/transactions/ready_nft.cdc 0
-  flow transactions send --signer anpan src/transactions/transfer_nft.cdc 0x06 0
-  flow transactions send --signer jam src/transactions/ready_nft.cdc 0
-  flow transactions send --signer jam src/transactions/transfer_nft.cdc 0x01 0
-  flow transactions send --signer emulator-account src/transactions/ready_nft.cdc 0
-  flow transactions send --signer emulator-account src/transactions/transfer_nft.cdc 0x05 0
-  flow transactions send --signer anpan src/transactions/ready_nft.cdc 0
-  flow transactions send --signer anpan src/transactions/transfer_nft.cdc 0x06 0
+  flow transactions send --signer anpan src/transactions/mint_nft_period_1.cdc 0x01
 
-  flow transactions send --signer jam src/transactions/get_nft_info.cdc 0
+  flow transactions send --signer emulator-account src/transactions/ready_nft.cdc 5
+  flow transactions send --signer emulator-account src/transactions/transfer_nft.cdc 0x05 5
+  flow transactions send --signer anpan src/transactions/ready_nft.cdc 5
+  flow transactions send --signer anpan src/transactions/transfer_nft.cdc 0x06 5
+  flow transactions send --signer jam src/transactions/ready_nft.cdc 5
+  flow transactions send --signer jam src/transactions/transfer_nft.cdc 0x01 5
+  flow transactions send --signer emulator-account src/transactions/ready_nft.cdc 5
+  flow transactions send --signer emulator-account src/transactions/transfer_nft.cdc 0x05 5
+  flow transactions send --signer anpan src/transactions/ready_nft.cdc 5
+  flow transactions send --signer anpan src/transactions/transfer_nft.cdc 0x06 5
+
+  flow transactions send --signer jam src/transactions/get_nft_info.cdc 5
   ```
 
 - Ready の Event が発火される
 
   ```
-  flow transactions send --signer jam src/transactions/ready_nft.cdc 0
+  flow transactions send --signer jam src/transactions/ready_nft.cdc 5
   ```
 
 - Unready の Event が発火される
 
   ```
-  flow transactions send --signer jam src/transactions/unready_nft.cdc 0
+  flow transactions send --signer jam src/transactions/unready_nft.cdc 5
   ```
 
 - any が withdrawCount, depositCount, addressList, readyTimeHourPeriod を確認できる

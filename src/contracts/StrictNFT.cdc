@@ -20,7 +20,7 @@ pub contract StrictNFT: NonFungibleToken {
         
         access(contract) var withdrawCount: UInt64 // withdrawされた回数
         access(contract) var depositCount: UInt64 // depositされた回数
-        access(contract) var addressList: [Address] // アドレスを格納するリスト
+        access(contract) var addressList: [[AnyStruct]] // depositした時刻とその瞬間のownerアドレスを格納するDictionary
 
         access(contract) var isReady: Bool // ready状態かどうかのステータス
         access(contract) var readyTime: UInt64? // ready状態にした瞬間の時間を格納する変数
@@ -41,12 +41,12 @@ pub contract StrictNFT: NonFungibleToken {
         }
 
         // アドレスのセットしかさせないために関数化
-        access(contract) fun setAddress(address: Address){
+        access(contract) fun setAddress(addressInfo: [AnyStruct]){
             // アドレスは５つまで、それ以上はFILO
             while self.addressList.length >= 5 {
                 self.addressList.removeFirst()
             }
-            self.addressList.append(address)
+            self.addressList.append(addressInfo)
         }
 
         // ready状態にするための関数
@@ -130,6 +130,7 @@ pub contract StrictNFT: NonFungibleToken {
                     )
                 case Type<MetadataViews.ExternalURL>():
                     return MetadataViews.ExternalURL("https://example-nft.onflow.org/".concat(self.id.toString()))
+
                 case Type<MetadataViews.NFTCollectionData>():
                     return MetadataViews.NFTCollectionData(
                         storagePath: StrictNFT.CollectionStoragePath,
@@ -145,18 +146,18 @@ pub contract StrictNFT: NonFungibleToken {
                 case Type<MetadataViews.NFTCollectionDisplay>():
                     let media = MetadataViews.Media(
                         file: MetadataViews.HTTPFile(
-                            url: "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg"
+                            url: "https://raw.githubusercontent.com/ShuntaroOkuma/tokyo_web3_hackathon_2022/main/metadata/collection_image.png"
                         ),
-                        mediaType: "image/svg+xml"
+                        mediaType: "image/png"
                     )
                     return MetadataViews.NFTCollectionDisplay(
                         name: "The StrictNFT Collection",
-                        description: "This collection is used as an example to help you develop your next Flow NFT.",
-                        externalURL: MetadataViews.ExternalURL("https://example-nft.onflow.org"),
+                        description: "This collection is used for StrictNFT.", // コレクションの説明
+                        externalURL: MetadataViews.ExternalURL("https://github.com/ShuntaroOkuma/tokyo_web3_hackathon_2022"),
                         squareImage: media,
                         bannerImage: media,
                         socials: {
-                            "twitter": MetadataViews.ExternalURL("https://twitter.com/flow_blockchain")
+                            "twitter": MetadataViews.ExternalURL("https://twitter.com/shun25533233")
                         }
                     )
                 case Type<MetadataViews.Traits>():
@@ -183,8 +184,10 @@ pub contract StrictNFT: NonFungibleToken {
     pub resource interface StrictNFTCollectionPublic {
         pub fun deposit(token: @NonFungibleToken.NFT)
         pub fun getIDs(): [UInt64]
-        pub fun getAdressList(id: UInt64): [Address]
-        pub fun getCount(id: UInt64): {String: UInt64}
+        pub fun getWithdrawCount(id: UInt64): UInt64?
+        pub fun getDepositCount(id: UInt64): UInt64?
+        pub fun getAddressList(id: UInt64): [[AnyStruct]]?
+        pub fun getReadyTimeHourPeriod(id: UInt64): UInt64?
         pub fun borrowNFT(id: UInt64): &NonFungibleToken.NFT
         pub fun borrowStrictNFT(id: UInt64): &StrictNFT.NFT? {
             post {
@@ -204,19 +207,26 @@ pub contract StrictNFT: NonFungibleToken {
         }
 
         pub fun ready(id: UInt64) {
-            let ref = (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)! as! &StrictNFT.NFT
-            ref.ready()
-            let readyTime = UInt64(getCurrentBlock().timestamp)
-            ref.addReadyTime(readyTime: readyTime)
-            emit Ready(id: ref.id)
+            if self.ownedNFTs[id] != nil {
+                let ref = (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)! as! &StrictNFT.NFT
+                ref.ready()
+                let readyTime = UInt64(getCurrentBlock().timestamp)
+                ref.addReadyTime(readyTime: readyTime)
+                emit Ready(id: ref.id)
+            } else {
+                log("Do not have NFT of the ID.")
+            }
         }
 
         pub fun unready(id: UInt64) {
-            let ref = (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)! as! &StrictNFT.NFT
-            ref.unready()
-            ref.delReadyTime()
-            emit Unready(id: ref.id)
-            // TODO: 頻繁にready/unreadyできないようにするために、24hくらい取引不可(ready不可)にしたい
+            if self.ownedNFTs[id] != nil {
+                let ref = (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)! as! &StrictNFT.NFT
+                ref.unready()
+                ref.delReadyTime()
+                emit Unready(id: ref.id)
+            } else {
+                log("Do not have NFT of the ID.")
+            }
         }
 
         // withdraw removes an NFT from the collection and moves it to the caller
@@ -227,8 +237,10 @@ pub contract StrictNFT: NonFungibleToken {
             assert(token.isReady == true, message:"token status is not ready")
             // readyにしてからreadyTimeHourPeriod時間が経過しているかどうかのassert
             if token.readyTime != nil {
+                    // 安全な使えるようにするために最低でも1時間は間隔を空けたいという想いから、"Hour"という設定を強制している
+                    // TODO: 後で変更する
                     // 本来は以下のように 3600秒をかけた秒数をassertで比較する
-                    // テストしやすくするために3600はかけていない
+                    // が、今はテストしやすくするために3600はかけていない
                     //assert( token.readyTime! + token.readyTimeHourPeriod * UInt64(3600) < getCurrentBlock().timestamp as! UInt64, 
                     //                                        message:"the specified time has not yet passed")
                     assert( token.readyTime! + token.readyTimeHourPeriod < UInt64(getCurrentBlock().timestamp), 
@@ -238,8 +250,6 @@ pub contract StrictNFT: NonFungibleToken {
             }
 
             token.incrementWithdraw()
-            log("withdraw count") // TODO: 最終的には削除する
-            log(token.withdrawCount) // TODO: 最終的には削除する
 
             emit Withdraw(id: token.id, from: self.owner?.address)
 
@@ -254,11 +264,8 @@ pub contract StrictNFT: NonFungibleToken {
         pub fun deposit(token: @NonFungibleToken.NFT) {
             let token <- token as! @StrictNFT.NFT
             token.incrementDeposit()
-            log("deposit count") // TODO: 最終的には削除する
-            log(token.depositCount) // TODO: 最終的には削除する
 
-            token.setAddress(address: self.owner!.address) // ownerのアドレスを刻む
-            log(token.addressList) // TODO: 最終的には削除する
+            token.setAddress(addressInfo: [UInt64(getCurrentBlock().timestamp), self.owner!.address]) // ownerのアドレスを刻む
 
             let id: UInt64 = token.id
 
@@ -274,15 +281,41 @@ pub contract StrictNFT: NonFungibleToken {
         pub fun getIDs(): [UInt64] {
             return self.ownedNFTs.keys
         }
-        
-        pub fun getCount(id: UInt64): {String: UInt64} {
-            let ref = (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)! as! &StrictNFT.NFT
-            return {"count_deposit": ref.depositCount, "count_withdraw": ref.withdrawCount}
+
+        pub fun getWithdrawCount(id: UInt64): UInt64? {
+            if self.ownedNFTs[id] != nil {
+                let ref =  (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)! as! &StrictNFT.NFT
+                return ref.withdrawCount
+            } else {
+                return nil
+            }
         }
 
-        pub fun getAdressList(id: UInt64): [Address] {
-            let ref =  (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)! as! &StrictNFT.NFT
-            return ref.addressList
+        pub fun getDepositCount(id: UInt64): UInt64? {
+            if self.ownedNFTs[id] != nil {
+                let ref =  (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)! as! &StrictNFT.NFT
+                return ref.depositCount
+            } else {
+                return nil
+            }
+        }
+
+        pub fun getAddressList(id: UInt64): [[AnyStruct]]? {
+            if self.ownedNFTs[id] != nil {
+                let ref =  (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)! as! &StrictNFT.NFT
+                return ref.addressList
+            } else {
+                return nil
+            }
+        }
+
+        pub fun getReadyTimeHourPeriod(id: UInt64): UInt64? {
+            if self.ownedNFTs[id] != nil {
+                let ref =  (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)! as! &StrictNFT.NFT
+                return ref.readyTimeHourPeriod
+            } else {
+                return nil
+            }
         }
 
         // borrowNFT gets a reference to an NFT in the collection

@@ -5,12 +5,13 @@
 - `flow transactions send --signer <Account名> src/transactions/get_nft_info.cdc <NFTのID>`
 
 例
-- `flow transactions send --signer admin src/transactions/get_nft_info.cdc 0`
+- `flow transactions send --signer emulator-account src/transactions/get_nft_info.cdc 0`
 - `flow transactions send --signer anpan src/transactions/get_nft_info.cdc 1`
 */
 
 import StrictNFT from 0x01
 import NonFungibleToken from 0x01
+import MetadataViews from 0x01
 
 transaction(id: UInt64) {
 
@@ -18,9 +19,11 @@ transaction(id: UInt64) {
     log(signer.address)
 
     // tokenリソースの確認
-    let CollectionRef = signer.borrow<&StrictNFT.Collection>(from: StrictNFT.CollectionStoragePath)
+    let CollectionRef = signer.getCapability(StrictNFT.CollectionPublicPath)
+                                  .borrow<&{StrictNFT.StrictNFTCollectionPublic}>()
+                                    ?? panic("Could not borrow a reference to the collection")
     if CollectionRef != nil {
-      let nftRef = CollectionRef?.borrowStrictNFT(id: id)
+      let nftRef = CollectionRef.borrowStrictNFT(id: id)
       if nftRef != nil {
         log(nftRef)
       } else {

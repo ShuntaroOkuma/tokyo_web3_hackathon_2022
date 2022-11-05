@@ -1,10 +1,10 @@
 /*
-NFTをready状態にした後すぐの場合はdestroyできないことを確認するためのトランザクション
+NFTをdestroyためのトランザクション
 
 実行方法
 
-- `flow transactions send --signer emulator-account src/transactions/ready_destroy_nft.cdc 0`
-- `flow transactions send --signer anpan src/transactions/ready_destroy_nft.cdc 1`
+- `flow transactions send --signer emulator-account src/transactions/destroy_nft.cdc 0`
+- `flow transactions send --signer anpan src/transactions/destroy_nft.cdc 1`
 */
 
 import StrictNFT from 0x01
@@ -17,14 +17,11 @@ transaction(id: UInt64) {
 
     let CollectionRef = signer.borrow<&StrictNFT.Collection>(from: StrictNFT.CollectionStoragePath)
     if CollectionRef != nil {
-      // ready
-      CollectionRef?.ready(id: id)
       // withdraw
-      //  readyした後すぐの場合は、そもそもwithdrawでエラーになるのでdestroyまで到達しない
       let nft <- CollectionRef?.withdraw(withdrawID: id) ?? panic("Could not withdraw nft")
       // destroy
       destroy nft
-      log("destory nft, successfully.")
+      log("destroy nft, successfully.")
     } else {
       log("  do not have StrictNFT Collection")
     }

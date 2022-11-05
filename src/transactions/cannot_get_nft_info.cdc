@@ -5,8 +5,8 @@
 - `flow transactions send --signer <Account名> src/transactions/get_nft_info.cdc <NFTのID>`
 
 例
-- `flow transactions send --signer admin src/transactions/get_nft_info.cdc 0`
-- `flow transactions send --signer anpan src/transactions/get_nft_info.cdc 1`
+- `flow transactions send --signer emulator-account src/transactions/cannot_get_nft_info.cdc 0`
+- `flow transactions send --signer anpan src/transactions/cannot_get_nft_info.cdc 1`
 */
 
 import StrictNFT from 0x01
@@ -36,7 +36,7 @@ transaction(id: UInt64) {
       nftRef.depositCount = 0 // unknown memberとなるはず
       nftRef.addressList = [] // unknown memberとなるはず
       nftRef.isReady = true // unknown memberとなるはず
-      nftRef.readyTime = 2? // unknown memberとなるはず
+      nftRef.readyTime = 2 // unknown memberとなるはず
       nftRef.readyTimeHourPeriod = 2 // unknown memberとなるはず
     } else {
       log("  do not have StrictNFT Collection")

@@ -1,6 +1,8 @@
 /*
 Minterリソースを使って、NFTをmintし、Collectionに格納するためのトランザクション
 
+ただしテストのために、initReadyTimeHourPeriod: 1 を指定している
+
 実行方法
 
 - `flow transactions send --signer <Minter所有者> src/transactions/mint_nft.cdc <NFTを受け取るアカウントのアドレス>`
@@ -35,7 +37,7 @@ transaction(recipient: Address) {
       description: "This is StrictNFT developed for tokyo web3 hackathon.",
       thumbnail: "https://raw.githubusercontent.com/ShuntaroOkuma/tokyo_web3_hackathon_2022/main/metadata/nft_image.png",
       royalties: [],
-      initReadyTimeHourPeriod: 60,
+      initReadyTimeHourPeriod: 1,
     )
 
     log("Recipient NFT IDs after execute:")
