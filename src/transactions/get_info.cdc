@@ -3,7 +3,7 @@
 
 実行方法
 
-- `flow transactions send --signer admin src/transactions/get_info.cdc`
+- `flow transactions send --signer emulator-account src/transactions/get_info.cdc`
 - `flow transactions send --signer anpan src/transactions/get_info.cdc`
 */
 
@@ -25,7 +25,7 @@ transaction {
       log("  have ownedNFTs which length is:")
       log(CollectionRef?.ownedNFTs?.length)
       
-      // ownedNFTのID、AddressList、Count
+      // ownedNFTのID
       log("  have below NFT IDs:")
       log(CollectionRef?.getIDs())
     } else {

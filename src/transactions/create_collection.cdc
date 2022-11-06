@@ -1,5 +1,10 @@
 /*
 空っぽのCollectionを署名アカウントのストレージに格納するためのトランザクション
+
+実行方法
+
+- `flow transactions send --signer anpan src/transactions/create_collection.cdc`
+
 */
 
 import StrictNFT from 0x01

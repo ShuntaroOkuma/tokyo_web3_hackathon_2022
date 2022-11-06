@@ -17,6 +17,7 @@ transaction() {
     // Collectionごとdestroyすることを試すためにload
     let Collection <- signer.load<@StrictNFT.Collection>(from: StrictNFT.CollectionStoragePath)
         ?? panic("signer does not have Collection")
+        
     destroy Collection
   }
 }

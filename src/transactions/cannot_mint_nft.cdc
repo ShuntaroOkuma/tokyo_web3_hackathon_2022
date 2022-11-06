@@ -35,7 +35,7 @@ transaction(recipient: Address) {
       description: "テストNFT",
       thumbnail: "https://dummyimage.com/600x400/000/fff",
       royalties: [],
-      initReadyTimeHourPeriod: 0,
+      initReadyTimeHourPeriod: 0, // 1未満に設定しているためエラーが発生する想定
     )
 
     log("Recipient NFT IDs after execute:")

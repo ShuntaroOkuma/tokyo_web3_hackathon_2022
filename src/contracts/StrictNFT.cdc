@@ -43,6 +43,7 @@ pub contract StrictNFT: NonFungibleToken {
         // アドレスのセットしかさせないために関数化
         access(contract) fun setAddress(addressInfo: [AnyStruct]){
             // アドレスは５つまで、それ以上はFILO
+            // 今回のユースケースを考えると5つ程度で問題ないと考えている
             while self.addressList.length >= 5 {
                 self.addressList.removeFirst()
             }
@@ -152,7 +153,7 @@ pub contract StrictNFT: NonFungibleToken {
                     )
                     return MetadataViews.NFTCollectionDisplay(
                         name: "The StrictNFT Collection",
-                        description: "This collection is used for StrictNFT.", // コレクションの説明
+                        description: "This collection is used for StrictNFT.",
                         externalURL: MetadataViews.ExternalURL("https://github.com/ShuntaroOkuma/tokyo_web3_hackathon_2022"),
                         squareImage: media,
                         bannerImage: media,
@@ -237,7 +238,7 @@ pub contract StrictNFT: NonFungibleToken {
             assert(token.isReady == true, message:"token status is not ready")
             // readyにしてからreadyTimeHourPeriod時間が経過しているかどうかのassert
             if token.readyTime != nil {
-                    // 安全な使えるようにするために最低でも1時間は間隔を空けたいという想いから、"Hour"という設定を強制している
+                    // 安全に使えるようにするために最低でも1時間は間隔を空けたいという考えから、"Hour"という設定を強制している
                     // TODO: 後で変更する
                     // 本来は以下のように 3600秒をかけた秒数をassertで比較する
                     // が、今はテストしやすくするために3600はかけていない
@@ -345,8 +346,10 @@ pub contract StrictNFT: NonFungibleToken {
                 assert(tokenRef.isReady == true, message:"token status is not ready")
                 // readyにしてからreadyTimeHourPeriod時間が経過しているかどうかのassert
                 if tokenRef.readyTime != nil {
+                    // 安全に使えるようにするために最低でも1時間は間隔を空けたいという考えから、"Hour"という設定を強制している
+                    // TODO: 後で変更する
                     // 本来は以下のように 3600秒をかけた秒数をassertで比較する
-                    // テストしやすくするために3600はかけていない
+                    // が、今はテストしやすくするために3600はかけていない
                     //assert( tokenRef.readyTime! + tokenRef.readyTimeHourPeriod * UInt64(3600) < getCurrentBlock().timestamp as! UInt64, 
                     //                                        message:"the specified time has not yet passed")
                     assert( tokenRef.readyTime! + tokenRef.readyTimeHourPeriod < UInt64(getCurrentBlock().timestamp), 
@@ -386,7 +389,7 @@ pub contract StrictNFT: NonFungibleToken {
             let currentBlock = getCurrentBlock()
             metadata["mintedBlock"] = currentBlock.height
             metadata["mintedTime"] = currentBlock.timestamp
-            metadata["minter"] = recipient.owner!.address
+            metadata["minter"] = self.owner!.address
 
             // this piece of metadata will be used to show embedding rarity into a trait
             metadata["foo"] = "bar"
@@ -401,6 +404,9 @@ pub contract StrictNFT: NonFungibleToken {
                 metadata: metadata,
                 initReadyTimeHourPeriod: initReadyTimeHourPeriod
             )
+
+            // minterのアドレスを刻む
+            newNFT.setAddress(addressInfo: [UInt64(getCurrentBlock().timestamp), self.owner!.address])
 
             // deposit it in the recipient's account using their reference
             recipient.deposit(token: <-newNFT)
@@ -435,3 +441,4 @@ pub contract StrictNFT: NonFungibleToken {
         emit ContractInitialized()
     }
 }
+ 

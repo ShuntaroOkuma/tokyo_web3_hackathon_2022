@@ -26,7 +26,6 @@ import StrictNFT from 0x01
 import NonFungibleToken from 0x01
 
 transaction() {
-  //let minter: @StrictNFT.NFTMinter
 
   prepare(sender: AuthAccount, receiver: AuthAccount){
     pre {
@@ -37,7 +36,6 @@ transaction() {
     let minter <- sender.load<@StrictNFT.NFTMinter>(from: StrictNFT.MinterStoragePath)!
     // minterをreceiverへ格納
     receiver.save(<-minter, to: StrictNFT.MinterStoragePath)
-    //sender.save<@StrictNFT.NFTMinter>(<-minter, to: StrictNFT.MinterStoragePath)!
     log("Moved Minter resource.")
   }
 }

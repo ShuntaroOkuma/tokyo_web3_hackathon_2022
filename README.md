@@ -1,6 +1,78 @@
 # tokyo_web3_hackathon_2022
 
-# 最速セットアップ
+tokyo web3 hackathon のために開発したコントラクト。
+
+| 項目名                           | 内容                                                                          |
+| -------------------------------- | ----------------------------------------------------------------------------- |
+| 使用した tech stacks             | cadence                                                                       |
+| 使用した Blockchain              | flow                                                                          |
+| deploy した Contract             | `src/contracts/StrictNFT.cdc`                                                 |
+| application code やその他の file | トランザクションコード: `src/transactions/`, スクリプトコード: `src/scripts/` |
+| テスト手順                       | README.md 後半                                                                |
+
+# プロジェクトの概要
+
+StrictNFT とは SBT の基本的な考え方を踏襲しつつ、より柔軟に利用でき、かつセキュリティも保つことができる NFT です。SBT と同じくアイデンティティや権利/正当性の証明としての利用を想定していますが「譲渡可能」という点が異なります。
+SBT は譲渡できないため、証明を発行する機関が mint する必要があり、両者を分離できません。一方で StrictNFT は履歴（譲渡回数、過去のアドレス）を NFT に記録した上で譲渡できるため、証明を発行する機関と mint する機関を分離でき、また履歴を見ることで正当なルートであることを保証できます。
+SBT は Burn はできるためユーザーが鍵を盗まれると NFT を一気に失う可能性があります。StrictNFT では譲渡と Burn をするには NFT を ready 状態にして一定時間待つタイムロック機能を持っています。ready 状態になるときに Event が発火するため、所有者の知らぬところで鍵を盗んだユーザーが ready 状態にしても所有者は気付くことができます。
+このように、履歴によって NFT の信頼担保につながり、タイムロックによって鍵の盗難対策ができる NFT となっています。
+
+# コンセプト
+
+- セキュアで柔軟な SBT Like な NFT を Flow/Cadence で作る
+
+- SBT は
+
+  - 譲渡できない
+  - 鍵盗難対策
+    - 移動できないから安全
+    - ソーシャルリカバリーで鍵を再設定できる
+  - 鍵紛失対策
+    - ソーシャルリカバリーで鍵を再設定できる
+      - 4 of 7 が推奨されている
+  - 参考：[Why we need wide adoption of social recovery wallets](https://vitalik.ca/general/2021/01/11/recovery.html)
+
+- StrictNFT は
+
+  - 譲渡できる
+    - ただし、すぐには譲渡できない
+      - NFT を ready 状態にして、所定の時間待つ（Ready Event が発火される）
+      - その後、withdraw が可能になる
+  - 鍵盗難対策
+    - 譲渡するためには ready 状態にする必要があるが、その際に Ready Event が発火されるため、ユーザーが気づける可能性が高い（DApps やウォレットの仕様次第）
+    - 実行した覚えのない Ready Event が発生したら、すぐに unready に戻し、鍵の再設定を実施することで、被害を抑えられる
+      - 盗難時に ready 状態にしていた NFT は流出を防げない
+  - 鍵紛失対策
+    - ソーシャルリカバリーで鍵を再設定できる
+      - 自分の別端末を含めた 2 of 3 くらいの最小構成でも十分堅牢
+        - (7 人集めることにハードルの高さを感じる)
+
+# StrictNFT の特徴
+
+## 基本的には SBT の利用想定と同じ
+
+- 免許証、パスポート
+- 職務履歴証明、学歴証明
+- 医療記録の証明
+- NFT との紐付けによる正当性の証明（アーティストなど）
+  - NFT として作品を発行するときに SBT をつける
+
+## 譲渡履歴の記録
+
+- withdraw/deposit の回数、deposit を実行したアカウントのアドレスがコントラクトに記録される
+
+## タイムロック
+
+- withdraw と destroy を実行するには事前に対象の NFT を ready 状態にしておき、一定時間待つ必要があるという仕組み
+- 例えば、悪意あるユーザーが一般ユーザーの鍵を盗み、不正に withdraw や destroy を実行しようとするときに、一度 NFT を ready 状態にする必要がある
+- ready 状態になると Event が発火されるようにしているため、一般ユーザーはその行動を検知できる
+- 一般ユーザーは自分が実行したトランザクションではない場合、すぐにその NFT を unready の状態に戻すことで、悪意あるユーザーの withdraw や destroy を防ぐことが可能
+
+# ローカル環境構築手順
+
+FlowCLI はインストールされている前提。
+
+## 最速セットアップ方法
 
 ```sh
 rm -rf flowdb/ flow.json
@@ -17,117 +89,6 @@ flow transactions send --signer emulator-account src/transactions/mint_nft.cdc 0
 flow transactions send src/transactions/get_info.cdc
 flow transactions send --signer emulator-account src/transactions/get_nft_info.cdc 0
 ```
-
-# 記載必須項目
-
-TODO: 最後にちゃんと書く
-
-- 使用した tech stacks
-
-  - cadence
-
-- 使用した Blockchain
-
-  - flow
-
-- deploy した Contract
-
-  - `src/contracts/StrictNFT.cdc`
-
-- application code やその他の file
-
-  - トランザクションコード: `src/transactions/`
-  - スクリプトコード: `src/scripts/`
-
-- テスト手順を含むリポジトリへのリンク
-
-  - ???
-
-- 審査やテストのためにプロジェクトにアクセスする方法など
-  - コントラクトの利用手順？
-
-# 目的
-
-- セキュアで柔軟な SBT Like な NFT を Flow/Cadence で作る
-  - StrictNFT（仮）
-
-# コンセプト
-
-- SBT は
-
-  - 譲渡できない
-  - 鍵盗難対策
-    - 移動できないから安全
-    - ソーシャルリカバリーで鍵を再設定できる
-  - 鍵紛失対策
-    - ソーシャルリカバリーで鍵を再設定できる
-      - 4 of 7 が推奨されている？
-  - 参考：[Why we need wide adoption of social recovery wallets](https://vitalik.ca/general/2021/01/11/recovery.html)
-
-- StrictNFT は
-
-  - 譲渡できる
-    - ただし、すぐには譲渡できない
-      - NFT を ready 状態にして、所定の時間待つ（Ready Event が発火される）
-      - その後、withdraw が可能になる
-  - 鍵盗難対策
-    - 譲渡するためには ready 状態にする必要があるが、その際に Ready Event が発火されるため、ユーザーが気づける可能性が高い（DApps やウォレットの仕様次第）
-    - 実行した覚えのない Ready Event が発生したら、すぐに unready に戻し、鍵の再設定を実施することで、被害を抑えられる
-      - 盗難時に ready 状態にしていた NFT は流出を防げない
-  - 鍵紛失対策
-    - ソーシャルリカバリーで鍵を再設定できる
-      - 自分の別端末を含めた 2 of 3 くらいの最小構成でも十分堅牢ではない？
-        - 7 人集めることにハードルの高さを感じる
-      - そこにも、再設定のための ready が必要、という仕組みを入れる？
-
-# StrictNFT の特徴
-
-## 基本的には SBT の利用想定と同じ
-
-- 免許証、パスポート
-- 職務履歴証明、学歴証明
-- 医療記録の証明
-- NFT との紐付けによる正当性の証明（アーティストなど）
-  - NFT として作品を発行するときに SBT をつける
-
-## 譲渡可能、譲渡履歴が記録される
-
-- 譲渡可能だが、上述の通り、ready 状態を遷移して withdraw する必要がある
-- withdraw/deposit の回数、その際に通ったアドレスがコントラクトに記録される
-
-- 譲渡できないデメリットとして、
-
-  1. 権利を剥奪できない
-  2. 発行機関（Minter）がユーザーの近くに必要になってしまう
-     Minter リソースを持っているアカウントが mint し、直接エンドユーザーのアカウントに deposit する必要がある。
-     つまりは、免許証の発行のために Minter リソースを持っているアカウントがボトルネックになってしまう。
-
-- 譲渡が可能であれば
-
-  1. 免許証や学歴証明などの権利を剥奪（destroy）することができる
-     StrictNFT を所有しているユーザーの ready/withdraw のアクションが必要なので、当事者同士で協議の上、という前提
-  2. 発行機関（Minter）と権利の承認機関を分けられる
-     - あらかじめ発行機関が StrictNFT を複数 Mint しておき、免許証を発行する機関に配布しておく
-     - 免許を取得したエンドユーザーに免許証発行機関が deposit する
-     - そうすることで、複数の機関のウォレットを通過し、そのアドレスがコントラクトに記録されるため、信頼性の担保に繋がる
-       - 所定の順番で機関を通ってきたことがわかる
-       - 会社の承認フローに近いイメージ？
-
-## 鍵盗難時のなりすましに対応できる
-
-- 上述した通り、鍵が盗難され、アカウント所有者の意図せぬ withdraw があったとしても ready にされた段階で気づける
-- また、愉快犯的な盗んで全て削除してといういたずらが、有名人への攻撃としてはあり得るが、destroy も ready 状態にする必要があるため事前に気づける
-
-## [要検討]鍵盗難時に ready/unready のいたちごっこになる可能性がある
-
-- 鍵盗難時に ready を繰り返される可能性がある
-  - 何かユーザーが面倒なことをやることになるけど回復できるようにしておけば、頻繁に ready/unready するような悪質な利用はできない
-  - 仮想通貨を払うとか、回復させたトークンはしばらく取引できなくなる、とか
-  - 24 時間くらいそのトークンは取引できなくなる、であればすぐに実装できそう
-
-# ローカル環境構築手順
-
-## flow のインストール
 
 ## FlowCLI の初期化
 
@@ -261,26 +222,171 @@ Keys     1
 }
 ```
 
-# ユースケース
+### コントラクトをデプロイする
 
-なりすましを防げるか、がわかるケースを明確にしておきたい
-DApps でどう使うか、にも繋がる
+flow.json に deployments と contracts の情報を追記する。
 
-1. anpan から jam に NFT を移動
-   これは ready と transfer で普通にできる
+```json
+{
+	"networks": {
+    (省略)
+  },
+	"accounts": {
+    (省略)
+  },
+  "deployments": {
+    "emulator": {
+        "emulator-account": ["StrictNFT"]
+    }
+  },
+  "contracts": {
+    "StrictNFT": "./src/contracts/StrictNFT.cdc"
+  }
+}
+```
 
-   deposit 時に setAddress しているため、minter のアドレスが必ず最初に記録される
+デプロイする。
 
-2. baikin のユーザーが anpan になりすまして、
+```
+flow deploy
+```
 
-- NFT を baikin に送ろうとする
-- NFT を destroy しようとする
-- Collection を destroy しようとする
-- 自分のアイデンティティだと証明して現実世界で何かしようとする
-  - 認証機関がチェック用 NFT を送り、ユーザーがそれを ready する
-  - ReadyTimeHourPeriod を待つ間に unready されたり、鍵の再設定が行われなければ、本人と認証する
-    とか
-    ただ、それには時間がかかる…顔写真とかでの検証とかメールによる 2 段階認証のが手っ取り早い
+# 利用シーン
+
+## 登場人物
+
+- emulator-account(`0x01`): StrictNFT.cdc をデプロイするアカウント（minter リソースも所持）
+- anpan(`0x05`): StrictNFT を使った証明書をもらう一般人
+- jam(`0x06`): 証明書の発行機関
+- baikin(`0x07`): anpan の鍵を盗んだ悪者
+
+![actors](metadata/actors.png)
+
+## 事前準備
+
+- 上述した環境構築が完了している前提
+
+- 各登場人物用にコレクションを作る
+
+```
+flow transactions send --signer anpan src/transactions/create_collection.cdc
+flow transactions send --signer jam src/transactions/create_collection.cdc
+flow transactions send --signer baikin src/transactions/create_collection.cdc
+```
+
+- emulator-account が複数の NFT を mint し 証明書の発行機関である jam に渡しておく
+  - その際、ready してから withdraw や destroy が可能になるまでのロック時間（`readyTimeHourPeriod`）は 60 秒に設定する
+  - 本来は 1 時間以上を設定することが望ましいが、テストのために短くしている
+
+```
+flow transactions send --signer emulator-account src/transactions/mint_nft.cdc 0x06
+flow transactions send --signer emulator-account src/transactions/mint_nft.cdc 0x06
+flow transactions send --signer emulator-account src/transactions/mint_nft.cdc 0x06
+flow transactions send --signer emulator-account src/transactions/mint_nft.cdc 0x06
+flow transactions send --signer emulator-account src/transactions/mint_nft.cdc 0x06
+```
+
+## シーン 1. NFT を譲渡する
+
+まずは一般的な利用想定として、何かの証明書として NFT を利用する場面で、その証明書を発行するシーン。
+
+![scene1](metadata/scene1.png)
+
+1. anpan が証明書を付与する基準を満たしていると jam が判断し、 anpan に付与する予定の ID:0 の NFT を ready にする
+
+```
+flow transactions send --signer jam src/transactions/ready_nft.cdc 0
+```
+
+2. ロック時間が経過した後に、jam から anpan に証明書として ID:0 の NFT を渡す
+
+```
+flow transactions send --signer jam src/transactions/transfer_nft.cdc 0x05 0
+```
+
+3. anpan は`addressList`から、受領した NFT が正当なものか（正当な機関を通ってきたか）を確認できる
+
+```
+flow scripts execute src/scripts/get_nft_view.cdc 0x05 0
+```
+
+想定出力：
+
+```
+(省略), addressList: [[1667660770, 0x0000000000000001], [1667661880, 0x0000000000000006]], (省略)
+```
+
+## シーン 2. なりすましによる盗難から NFT を守る
+
+anpan の秘密鍵を baikin が盗み、悪事を働こうとするシーン。
+
+![scene2](metadata/scene2.png)
+
+1. baikin は ID:0 の NFT を baikin に送るために、ready 状態にする
+
+baikin は anpan の秘密鍵を持っているため `--signer anpan`を実行できる。
+
+```
+flow transactions send --signer anpan src/transactions/ready_nft.cdc 0
+```
+
+2. ready にしたことがわかる Event が発行される
+
+Event ログの例
+
+```
+EVT [22849d] A.0000000000000001.StrictNFT.Ready: 0x90bab0fea7008bd3c12ce01ef67b63274d995d7dd42e883a8d71a5600fe26025
+```
+
+3. anpan は、自分のコレクションに関する Event が発生すると通知してくれる DApps を使っているため、ID:0 の NFT が ready 状態になったことに気づく
+
+4. anpan はすぐさま ID:0 の NFT を unready 状態に変更する
+
+```
+flow transactions send --signer anpan src/transactions/unready_nft.cdc 0
+```
+
+5. baikin は ID:0 の NFT が unready になり、withdraw も destroy もできない
+
+- withdraw する
+
+```
+flow transactions send --signer anpan src/transactions/transfer_nft.cdc 0x07 0
+```
+
+- NFT を destroy する
+
+```
+flow transactions send --signer anpan src/transactions/destroy_nft.cdc 0
+```
+
+- Collection を destroy する
+
+```
+flow transactions send --signer anpan src/transactions/destroy_collection.cdc
+```
+
+## シーン 3. 過去の NFT の遷移履歴を活用する
+
+jam の知らないところで、anpan が baikin に証明書を渡してしまうシーン。
+
+![scene3](metadata/scene3.png)
+
+1. anpan は ID:0 の NFT を baikin に譲渡する
+
+```
+flow transactions send --signer anpan src/transactions/ready_nft.cdc 0
+(待つ)
+flow transactions send --signer anpan src/transactions/transfer_nft.cdc 0x07 0
+```
+
+2. baikin が ID:0 の NFT を証明に現実世界で何かをしようとした時（例えばパン工場に入る許可を取ろうとした時）に、jam が NFT を確認する
+
+```
+flow scripts execute src/scripts/get_nft_view.cdc 0x07 0
+```
+
+jam は証明書の`addressList`を確認し、経路が通常とは異なることを確認。NFT を無効とし、baikin の NFT では証明にならない旨を告げる…。
 
 # テストケース
 
@@ -289,11 +395,6 @@ DApps でどう使うか、にも繋がる
 - minter: minter 所有者
 - user: StrictNFT リソース所有者
 - any: StrictNFT リソース非所有者
-
-- emulator-contract: StrictNFT.cdc をデプロイするアカウント
-- anpan
-- jam
-- baikin
 
 ## コントラクト
 
